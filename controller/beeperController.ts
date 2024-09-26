@@ -78,7 +78,7 @@ export const putBeeper = async (req: Request, res: Response) => {
   const { LAT, LON } = req.body;
   const { id } = req.params;
 
-  let beepers: Beeper[] = await readFromJsonFile();
+  const beepers: Beeper[] = await readFromJsonFile();
 
   const findBeeper: number = beepers.findIndex((b) => b.id === id)!;
 
@@ -93,8 +93,23 @@ export const putBeeper = async (req: Request, res: Response) => {
     }
     beepers[findBeeper].latitude = LAT;
     beepers[findBeeper].longitude = LON;
+
+    beepers[findBeeper]!.status = statuses[indexOfCurrentStatus + 1];
+    await writeListBeepersToJsonFile(beepers);
+
+    changeStatusToDetonated(findBeeper);
+  } else {
+    beepers[findBeeper]!.status = statuses[indexOfCurrentStatus + 1];
+    await writeListBeepersToJsonFile(beepers);
+    res.status(200).json({ massage: beepers });
   }
-  beepers[findBeeper]!.status = statuses[indexOfCurrentStatus + 1];
-  await writeListBeepersToJsonFile(beepers);
-  res.status(200).json({ massage: beepers });
+};
+
+export const changeStatusToDetonated = async (beeper: number) => {
+  const beepers: Beeper[] = await readFromJsonFile();
+  setTimeout(() => {
+    beepers[beeper].status = statuses[4];
+    beepers[beeper].detonated_at = new Date();
+    writeListBeepersToJsonFile(beepers);
+  }, 10000);
 };

@@ -63,7 +63,7 @@ export const deleteBeeper = (req, res) => __awaiter(void 0, void 0, void 0, func
 export const putBeeper = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { LAT, LON } = req.body;
     const { id } = req.params;
-    let beepers = yield readFromJsonFile();
+    const beepers = yield readFromJsonFile();
     const findBeeper = beepers.findIndex((b) => b.id === id);
     const indexOfCurrentStatus = statuses.indexOf(beepers[findBeeper].status);
     if (beepers[findBeeper].status === statuses[2]) {
@@ -75,8 +75,21 @@ export const putBeeper = (req, res) => __awaiter(void 0, void 0, void 0, functio
         }
         beepers[findBeeper].latitude = LAT;
         beepers[findBeeper].longitude = LON;
+        beepers[findBeeper].status = statuses[indexOfCurrentStatus + 1];
+        yield writeListBeepersToJsonFile(beepers);
+        changeStatusToDetonated(findBeeper);
     }
-    beepers[findBeeper].status = statuses[indexOfCurrentStatus + 1];
-    yield writeListBeepersToJsonFile(beepers);
-    res.status(200).json({ massage: beepers });
+    else {
+        beepers[findBeeper].status = statuses[indexOfCurrentStatus + 1];
+        yield writeListBeepersToJsonFile(beepers);
+        res.status(200).json({ massage: beepers });
+    }
+});
+export const changeStatusToDetonated = (beeper) => __awaiter(void 0, void 0, void 0, function* () {
+    const beepers = yield readFromJsonFile();
+    setTimeout(() => {
+        beepers[beeper].status = statuses[4];
+        beepers[beeper].detonated_at = new Date();
+        writeListBeepersToJsonFile(beepers);
+    }, 10000);
 });
