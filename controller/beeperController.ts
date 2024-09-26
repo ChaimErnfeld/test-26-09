@@ -8,6 +8,14 @@ import {
   writeListBeepersToJsonFile,
 } from "../DAL/jsonBeeper.js";
 import { promises } from "dns";
+import {
+  addBeeper,
+  getBeepers,
+  getBeeper,
+  getBeeperByStatuses,
+  deletee,
+  put,
+} from "../services/beeperService.js";
 
 export const createBeeper = async (
   req: Request,
@@ -15,14 +23,7 @@ export const createBeeper = async (
 ): Promise<void> => {
   try {
     const { name } = req.body;
-
-    const newBeeper = {
-      id: uuidv4(),
-      name: name,
-      status: statuses[0],
-      created_at: new Date(),
-    };
-    await writeBeeperToJsonFile(newBeeper);
+    const newBeeper = await addBeeper(name);
 
     res.status(201).json({ "the new beeper": newBeeper });
   } catch (error) {
@@ -35,7 +36,7 @@ export const getAllBeepers = async (
   res: Response
 ): Promise<void> => {
   try {
-    const beepers: Beeper[] = await readFromJsonFile();
+    const beepers: Beeper[] = await getBeepers();
     res.status(201).json({ beepers: beepers });
   } catch (error) {
     res.status(400).json({ error: "error" });
@@ -46,70 +47,66 @@ export const getBeeperById = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  const beepers: Beeper[] = await readFromJsonFile();
+    const beeper: Beeper | number = await getBeeper(id);
+    if (typeof beeper !== "number") {
+      res.status(200).json(beeper);
+    } else {
+      res.status(400).json({ error: "beeper is not found" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: "error" });
+  }
+};
 
-  const findindexOfBeeper = beepers.findIndex((b) => b.id === id);
-  if (findindexOfBeeper !== -1) {
-    res.status(200).json(beepers[findindexOfBeeper]);
-  } else {
-    res.status(400).json({ massage: "error" });
+export const getBeepersByStatus = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { status } = req.params;
+
+    const beepers: Beeper[] = await getBeeperByStatuses(status);
+    res.status(200).json(beepers);
+  } catch (error) {
+    res.status(400).json({ error: "error" });
   }
 };
 
 export const deleteBeeper = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  let beepers: Beeper[] = await readFromJsonFile();
-
-  const findindexOfBeeper = beepers.findIndex((b) => b.id === id);
-
-  if (findindexOfBeeper !== -1) {
-    beepers.splice(findindexOfBeeper, 1);
-    await writeListBeepersToJsonFile(beepers);
-    res.status(200).json({ beepers: "good" });
-  } else {
-    res.status(400).json({ massage: "error" });
+    const beepers: Beeper[] | number = await deletee(id);
+    if (typeof beepers !== "number") {
+      res.status(200).json({ massage: "beeper Deleted successfully" });
+    } else {
+      res.status(400).json({ error: "beeper is not found" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: "error" });
   }
 };
 
 export const putBeeper = async (req: Request, res: Response) => {
-  const { LAT, LON } = req.body;
-  const { id } = req.params;
+  try {
+    const { LAT, LON } = req.body;
+    const { id } = req.params;
 
-  const beepers: Beeper[] = await readFromJsonFile();
+    const beeper: Beeper | number = await put(id, LAT, LON);
 
-  const findBeeper: number = beepers.findIndex((b) => b.id === id)!;
-
-  const indexOfCurrentStatus = statuses.indexOf(beepers[findBeeper].status);
-
-  if (beepers[findBeeper].status === statuses[2]) {
-    const lat: number = Latitude.findIndex((lat) => lat === LAT);
-    const lon: number = Longitude.findIndex((lon) => lon === LON);
-    if (lat === -1 || lon === -1 || lat !== lon) {
-      res.status(400).json({ massage: "lat or lon is not good" });
-      return;
+    if (typeof beeper !== "number") {
+      res.status(200).json(beeper);
+    } else if (beeper === -1) {
+      res.status(400).json({ massage: "The status cannot be changed" });
+    } else if (beeper === -2) {
+      res
+        .status(400)
+        .json({ massage: "lat or lon is not good or beeper is not found" });
     }
-    beepers[findBeeper].latitude = LAT;
-    beepers[findBeeper].longitude = LON;
-
-    beepers[findBeeper]!.status = statuses[indexOfCurrentStatus + 1];
-    await writeListBeepersToJsonFile(beepers);
-
-    changeStatusToDetonated(findBeeper);
-  } else {
-    beepers[findBeeper]!.status = statuses[indexOfCurrentStatus + 1];
-    await writeListBeepersToJsonFile(beepers);
-    res.status(200).json({ massage: beepers });
+  } catch (error) {
+    res.status(400).json({ error: "error" });
   }
-};
-
-export const changeStatusToDetonated = async (beeper: number) => {
-  const beepers: Beeper[] = await readFromJsonFile();
-  setTimeout(() => {
-    beepers[beeper].status = statuses[4];
-    beepers[beeper].detonated_at = new Date();
-    writeListBeepersToJsonFile(beepers);
-  }, 10000);
 };

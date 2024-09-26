@@ -15,12 +15,6 @@ export const readFromJsonFile = () => __awaiter(void 0, void 0, void 0, function
 });
 export const writeBeeperToJsonFile = (beeper) => __awaiter(void 0, void 0, void 0, function* () {
     const beepers = yield jsonfile.readFile(DB_FILE_PATH);
-    //   const indexOfBeeper = beepers.findIndex((b) => b.id === beeper.id);
-    //   if (indexOfBeeper !== -1) {
-    //     beepers[indexOfBeeper].status = beeper.status;
-    //   } else {
-    //     beepers.push(beeper);
-    //   }
     beepers.push(beeper);
     yield jsonfile.writeFile(DB_FILE_PATH, beepers);
 });
